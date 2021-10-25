@@ -11,7 +11,10 @@
 #include "fota_report.h"
 #include "networking.h"
 
-#define LAB5E_HOST "192.168.1.16"
+// Test host. The real host will be "data.lab5e.com:5684" for external clients
+// and "172.16.15.14:5683" for internal (ie CIoT) clients.
+
+#define LAB5E_HOST "192.168.1.67"
 #define LAB5E_PORT 5683
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
@@ -20,8 +23,6 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 #define FW_MODEL "Model 1"
 #define FW_SERIAL "00001"
 #define FW_MANUFACTURER "Lab5e AS"
-
-#define LAB5E_ENDPOINT = "coap://192.168.1.67:5683"
 
 // This is the buffer we'll be using for messages.
 #define BUF_SIZE 256
@@ -53,4 +54,5 @@ void main(void) {
   LOG_INF("FOTA report sent, result = %d", res);
 
   coap_stop_client();
+  k_sleep(K_FOREVER);
 }

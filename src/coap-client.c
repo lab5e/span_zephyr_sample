@@ -1,15 +1,14 @@
-#include <zephyr.h>
+#include <errno.h>
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(coap_client, LOG_LEVEL_DBG);
-
-#include <net/socket.h>
+#include <zephyr.h>
 
 #include <net/coap.h>
 #include <net/net_ip.h>
+#include <net/socket.h>
 #include <net/udp.h>
 
-#include <errno.h>
+LOG_MODULE_REGISTER(coap_client, LOG_LEVEL_DBG);
 
 #include "coap-client.h"
 
@@ -70,14 +69,14 @@ int coap_send_message(const uint8_t method, const char *path,
                        COAP_VERSION_1, COAP_TYPE_CON, COAP_TOKEN_MAX_LEN,
                        coap_next_token(), method, coap_next_id());
   if (r < 0) {
-    LOG_ERR("Failed to init CoAP message");
+    LOG_ERR("Failed to init CoAP message: %d", r);
     return -ENOMEM;
   }
 
   r = coap_packet_append_option(&request, COAP_OPTION_URI_PATH, path,
                                 strlen(path));
   if (r < 0) {
-    LOG_ERR("Unable add option to request");
+    LOG_ERR("Unable add option to request: %d", r);
     return -ENOMEM;
   }
 
@@ -85,14 +84,14 @@ int coap_send_message(const uint8_t method, const char *path,
   case COAP_METHOD_POST:
     r = coap_packet_append_payload_marker(&request);
     if (r < 0) {
-      LOG_ERR("Unable to append payload marker");
+      LOG_ERR("Unable to append payload marker: %d", r);
       return -ENOMEM;
     }
 
     r = coap_packet_append_payload(&request, (uint8_t *)buffer,
                                    sizeof(buffer) - 1);
     if (r < 0) {
-      LOG_ERR("Not able to append payload");
+      LOG_ERR("Not able to append payload: %d", r);
       return -ENOMEM;
     }
 
