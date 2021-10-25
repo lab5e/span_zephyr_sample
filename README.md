@@ -16,3 +16,8 @@ The CIoT devices may elect to use unencrypted UDP for the CoAP service. This
 makes deployments a bit easier and less resource hungry since they won't need
 a client certificate, DNS or DHCP support and everything can be configured via
 Span.
+
+The project is developed on a STM32 F429zi board but it should be relatively
+easy to modify it to run on any board with ethernet/wifi connectivity or a
+cellular IoT modem (like the nRF91 from Nordic Semiconductor) as long as it
+has a rudimentary socket support.
