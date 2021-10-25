@@ -25,6 +25,9 @@ int coap_send_message(const uint8_t method, const char *path, const uint8_t *buf
 
 /**
  * @brief Read message from CoAP client. The function will not block
+ * @param code response code from server
+ * @param buffer buffer with data from server
+ * @param len length of buffer
  * @return Number of bytes received
  */
-int coap_read_message(const uint8_t *buffer, size_t *len);
+int coap_read_message(uint8_t *code, uint8_t *buffer, size_t *len);

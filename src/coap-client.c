@@ -88,8 +88,7 @@ int coap_send_message(const uint8_t method, const char *path,
       return -ENOMEM;
     }
 
-    r = coap_packet_append_payload(&request, (uint8_t *)buffer,
-                                   sizeof(buffer) - 1);
+    r = coap_packet_append_payload(&request, (uint8_t *)buffer, len);
     if (r < 0) {
       LOG_ERR("Not able to append payload: %d", r);
       return -ENOMEM;
@@ -106,4 +105,43 @@ int coap_send_message(const uint8_t method, const char *path,
 
   LOG_INF("Sending message (%d bytes)", request.offset);
   return send(sock, request.data, request.offset, 0);
+}
+
+static void wait_for_data(void) {
+  if (poll(fds, nfds, -1) < 0) {
+    LOG_ERR("Error in poll:%d", errno);
+  }
+}
+
+int coap_read_message(uint8_t *code, uint8_t *buffer, size_t *len) {
+  memset(coap_data_buffer, 0, MAX_COAP_MSG_LEN);
+  LOG_DBG("Wait for data");
+  wait_for_data();
+  LOG_DBG("Data waiting");
+
+  int rcvd = recv(sock, coap_data_buffer, MAX_COAP_MSG_LEN, MSG_DONTWAIT);
+  if (rcvd == 0) {
+    *len = 0;
+    LOG_DBG("No data in");
+    return -EIO;
+  }
+
+  if (rcvd < 0) {
+    LOG_ERR("Error reading data: %d", errno);
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      *len = 0;
+      return 0;
+    }
+    return -errno;
+  }
+  struct coap_packet reply;
+  int ret = coap_packet_parse(&reply, coap_data_buffer, rcvd, NULL, 0);
+  if (ret < 0) {
+    LOG_ERR("Invalid CoAP packet returned: %d", ret);
+    *len = 0;
+    return 0;
+  }
+  *len = rcvd - reply.offset;
+  memcpy(buffer, reply.data + reply.offset, *len);
+  return *len;
 }
