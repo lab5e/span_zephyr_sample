@@ -18,7 +18,7 @@ static uint8_t buffer[BUF_SIZE];
 // Test host. The real host will be "data.lab5e.com:5684" for external clients
 // and "172.16.15.14:5683" for internal (ie CIoT) clients.
 
-#define LAB5E_HOST "192.168.1.67"
+#define LAB5E_HOST "192.168.1.118"
 #define LAB5E_PORT 5683
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
@@ -28,10 +28,16 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 #define FW_SERIAL "00001"
 #define FW_MANUFACTURER "Lab5e AS"
 
+static int bw_callback(bool last, uint32_t offset, uint8_t *buffer, size_t len)
+{
+  return 0;
+}
+
 /*
  * @brief Report the firmware version to the Lab5e CoAP endpoint
  */
-static int report_version(void) {
+static int report_version(void)
+{
   fota_report_t report = {.manufacturer = FW_MANUFACTURER,
                           .model = FW_MODEL,
                           .serial = FW_SERIAL,
@@ -41,14 +47,16 @@ static int report_version(void) {
   LOG_INF("Encoded FOTA buffer is %d bytes", sz);
 
   int ret = coap_send_message(COAP_METHOD_POST, "u", buffer, sz);
-  if (ret < 0) {
+  if (ret < 0)
+  {
     LOG_ERR("Error sending message: %d", ret);
     return ret;
   }
 
   uint8_t code = 0;
   ret = coap_read_message(&code, buffer, &sz);
-  if (ret < 0) {
+  if (ret < 0)
+  {
     LOG_ERR("Error receving message: %d", ret);
     return ret;
   }
@@ -57,16 +65,21 @@ static int report_version(void) {
   fota_response_t resp;
 
   ret = decode_fota_response(&resp, buffer, sz);
-  if (ret == 0) {
+  if (ret == 0)
+  {
     LOG_INF("Host: %s", log_strdup(resp.host));
     LOG_INF("Port: %d", resp.port);
     LOG_INF("Path: %s", log_strdup(resp.path));
     LOG_INF("Available: %d", resp.update);
   }
+
+  ret = coap_blockwise_transfer("fw", bw_callback);
+  LOG_INF("Got %d response from bwt", ret);
   return 0;
 }
 
-void main(void) {
+void main(void)
+{
   dhcp_init();
   int res = coap_start_client(LAB5E_HOST, LAB5E_PORT);
   LOG_INF("CoAP client started, result = %d", res);
