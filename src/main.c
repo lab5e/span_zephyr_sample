@@ -28,6 +28,10 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 #define FW_SERIAL "00001"
 #define FW_MANUFACTURER "Lab5e AS"
 
+/**
+ * This is the callback for the blockwise transfer. It is called once for every
+ * block returned from the server. The offset is the offset (in bytes) into the file
+ */
 static int bw_callback(bool last, uint32_t offset, uint8_t *buffer, size_t len)
 {
   static int block_count;
