@@ -31,3 +31,20 @@ int coap_send_message(const uint8_t method, const char *path, const uint8_t *buf
  * @return Number of bytes received
  */
 int coap_read_message(uint8_t *code, uint8_t *buffer, size_t *len);
+
+/**
+ * @brief callback for blockwise transfers.
+ * @param last set to true when this is the last block
+ * @param offset byte offset
+ * @param buffer data buffer
+ * @param len length of buffer
+ * @return 0 if ok, any other value to stop blockwise transfer
+ */
+typedef int (*blockwise_callback_t)(bool last, uint32_t offset, uint8_t *buffer, size_t *len);
+
+/**
+ * @brief Use blockwise transfers (with a GET request)
+ * @param path path to resource
+ * @param callback callback function for data blocks
+ */
+ int coap_blockwise_transfer(const char *path, blockwise_callback_t *callback);
