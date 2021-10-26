@@ -42,7 +42,8 @@ int coap_read_message(uint8_t *code, uint8_t *buffer, size_t *len);
 typedef int (*blockwise_callback_t)(bool last, uint32_t offset, uint8_t *buffer, size_t len);
 
 /**
- * @brief Use blockwise transfers (with a GET request)
+ * @brief Use blockwise transfers (with a GET request). This function returns when the download has
+ *        completed.
  * @param path path to resource
  * @param callback callback function for data blocks
  */

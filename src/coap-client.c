@@ -151,7 +151,6 @@ int coap_send_message(const uint8_t method, const char *path,
     return -EINVAL;
   }
 
-  LOG_INF("Sending message (%d bytes)", request.offset);
   return send(sock, request.data, request.offset, 0);
 }
 
@@ -166,15 +165,13 @@ static void wait_for_data(void)
 int coap_read_message(uint8_t *code, uint8_t *buffer, size_t *len)
 {
   memset(coap_data_buffer, 0, MAX_COAP_MSG_LEN);
-  LOG_DBG("Wait for data");
   wait_for_data();
-  LOG_DBG("Data waiting");
 
   int rcvd = recv(sock, coap_data_buffer, MAX_COAP_MSG_LEN, MSG_DONTWAIT);
   if (rcvd == 0)
   {
     *len = 0;
-    LOG_DBG("No data in");
+    LOG_DBG("No data in recv=%d", rcvd);
     return -EIO;
   }
 
@@ -197,6 +194,7 @@ int coap_read_message(uint8_t *code, uint8_t *buffer, size_t *len)
     return 0;
   }
   *len = rcvd - reply.offset;
+  *code = coap_header_get_code(&reply);
   memcpy(buffer, reply.data + reply.offset, *len);
   return *len;
 }
@@ -243,7 +241,6 @@ int coap_blockwise_transfer(const char *path, blockwise_callback_t callback)
       LOG_ERR("Unable to add block2 option: %d", r);
       return r;
     }
-    LOG_INF("Sending message (%d bytes)", request.offset);
     r = send(sock, request.data, request.offset, 0);
     if (r < 0)
     {

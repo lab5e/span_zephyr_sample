@@ -30,6 +30,13 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
 static int bw_callback(bool last, uint32_t offset, uint8_t *buffer, size_t len)
 {
+  static int block_count;
+  block_count++;
+  if (last)
+  {
+    LOG_INF("Received last block (of %d blocks) with %d bytes totalt", block_count, offset + len);
+    block_count = 0;
+  }
   return 0;
 }
 
@@ -44,7 +51,6 @@ static int report_version(void)
                           .version = FW_VERSION};
 
   size_t sz = encode_fota_report(&report, buffer);
-  LOG_INF("Encoded FOTA buffer is %d bytes", sz);
 
   int ret = coap_send_message(COAP_METHOD_POST, "u", buffer, sz);
   if (ret < 0)
@@ -61,7 +67,6 @@ static int report_version(void)
     return ret;
   }
 
-  LOG_INF("Got %d bytes back from the server", sz);
   fota_response_t resp;
 
   ret = decode_fota_response(&resp, buffer, sz);
@@ -73,8 +78,7 @@ static int report_version(void)
     LOG_INF("Available: %d", resp.update);
   }
 
-  ret = coap_blockwise_transfer("fw", bw_callback);
-  LOG_INF("Got %d response from bwt", ret);
+  coap_blockwise_transfer("fw", bw_callback);
   return 0;
 }
 
@@ -82,15 +86,25 @@ void main(void)
 {
   dhcp_init();
   int res = coap_start_client(LAB5E_HOST, LAB5E_PORT);
-  LOG_INF("CoAP client started, result = %d", res);
 
   res = report_version();
-  LOG_INF("FOTA report sent, result = %d", res);
 
-  // Download image w/ callback
-
-  // Push demo data
-
+  for (int i = 0; i < 100; i++)
+  {
+    buffer[0] = (uint8_t)i;
+    res = coap_send_message(COAP_METHOD_POST, "data/on/server", buffer, 1);
+    if (res >= 0)
+    {
+      size_t len = 0;
+      uint8_t code = 0;
+      res = coap_read_message(&code, buffer, &len);
+      if (res >= 0)
+      {
+        LOG_INF("Message %d sent successfully, code=%d, %d bytes returned from server", i, code, len);
+      }
+    }
+    k_sleep(K_MSEC(1000));
+  }
   coap_stop_client();
   k_sleep(K_FOREVER);
 }
