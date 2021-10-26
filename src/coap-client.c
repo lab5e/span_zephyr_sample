@@ -12,6 +12,12 @@ LOG_MODULE_REGISTER(coap_client, LOG_LEVEL_DBG);
 
 #include "coap-client.h"
 
+#include "clientcert.h"
+
+#ifdef CLIENT_CERT
+#include <net/tls_credentials.h>
+#endif
+
 #define BLOCK_WISE_TRANSFER_SIZE_GET 256
 #define MAX_COAP_MSG_LEN (BLOCK_WISE_TRANSFER_SIZE_GET + 64)
 static uint8_t coap_data_buffer[MAX_COAP_MSG_LEN];
@@ -39,13 +45,65 @@ int coap_start_client(const char *host, uint16_t port)
 
   inet_pton(AF_INET, host, &addr.sin_addr);
 
+#ifdef CLIENT_CERT
+  ret = tls_credential_add(CLIENT_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, root_certificate, sizeof(client_certificate));
+  if (ret != 0)
+  {
+    LOG_ERR("Unable to add root certificate to TLS credentials: %d", ret);
+  }
+  ret = tls_credential_add(CLIENT_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE, client_certificate, sizeof(client_certificate));
+  if (ret != 0)
+  {
+    LOG_ERR("Unable to add client certificate to TLS credentials: %d", ret);
+  }
+  ret = tls_credential_add(CLIENT_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY, client_key, sizeof(client_key));
+  if (ret != 0)
+  {
+    LOG_ERR("Unable to add client key to TLS credentials: %d", ret);
+  }
+  LOG_DBG("TLS credentials added for socket");
+#endif
+
+#ifdef CLIENT_CERT
+  sock = socket(addr.sin_family, SOCK_DGRAM, IPPROTO_DTLS_1_2);
+#else
   sock = socket(addr.sin_family, SOCK_DGRAM, IPPROTO_UDP);
+#endif
   if (sock < 0)
   {
     LOG_ERR("Failed to create UDP socket %d", errno);
     return -errno;
   }
 
+#ifdef CLIENT_CERT
+  sec_tag_t sec_tag_list[] = {
+      CLIENT_CERT_TAG,
+      CLIENT_KEY_TAG,
+  };
+
+  ret = setsockopt(sock, SOL_TLS, TLS_SEC_TAG_LIST, sec_tag_list, sizeof(sec_tag_list));
+  if (ret < 0)
+  {
+    LOG_ERR("Error setting TLS tag socket option: %d", errno);
+  }
+  /*  ret = setsockopt(sock, SOL_TLS, TLS_HOSTNAME,
+                   TLS_PEER_HOSTNAME, sizeof(TLS_PEER_HOSTNAME));
+  if (ret < 0)
+  {
+    LOG_ERR("Failed to set TLS_HOSTNAME option: %d", errno);
+    ret = -errno;
+  }*/
+
+  // Turn off peer validation (TODO: remove)
+  int verify = TLS_PEER_VERIFY_NONE;
+  ret = setsockopt(sock, SOL_TLS, TLS_PEER_VERIFY,
+                   &verify, sizeof(verify));
+  if (ret < 0)
+  {
+    LOG_ERR("Failed to set TLS_PEER_VERIFY option: %d", errno);
+    ret = -errno;
+  }
+#endif
   ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
   if (ret < 0)
   {
@@ -151,7 +209,13 @@ int coap_send_message(const uint8_t method, const char *path,
     return -EINVAL;
   }
 
-  return send(sock, request.data, request.offset, 0);
+  r = send(sock, request.data, request.offset, 0);
+  if (r < 0)
+  {
+    LOG_ERR("Error calling send(): %d", errno);
+    return -errno;
+  }
+  return 0;
 }
 
 static void wait_for_data(void)
