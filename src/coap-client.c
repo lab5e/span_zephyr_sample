@@ -46,7 +46,7 @@ int coap_start_client(const char *host, uint16_t port)
   inet_pton(AF_INET, host, &addr.sin_addr);
 
 #ifdef CLIENT_CERT
-  ret = tls_credential_add(CLIENT_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, root_certificate, sizeof(client_certificate));
+  ret = tls_credential_add(ROOT_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, root_certificate, sizeof(root_certificate));
   if (ret != 0)
   {
     LOG_ERR("Unable to add root certificate to TLS credentials: %d", ret);
@@ -56,7 +56,7 @@ int coap_start_client(const char *host, uint16_t port)
   {
     LOG_ERR("Unable to add client certificate to TLS credentials: %d", ret);
   }
-  ret = tls_credential_add(CLIENT_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY, client_key, sizeof(client_key));
+  ret = tls_credential_add(CLIENT_CERT_TAG, TLS_CREDENTIAL_PRIVATE_KEY, client_key, sizeof(client_key));
   if (ret != 0)
   {
     LOG_ERR("Unable to add client key to TLS credentials: %d", ret);
@@ -77,8 +77,8 @@ int coap_start_client(const char *host, uint16_t port)
 
 #ifdef CLIENT_CERT
   sec_tag_t sec_tag_list[] = {
+      ROOT_CERT_TAG,
       CLIENT_CERT_TAG,
-      CLIENT_KEY_TAG,
   };
 
   ret = setsockopt(sock, SOL_TLS, TLS_SEC_TAG_LIST, sec_tag_list, sizeof(sec_tag_list));
@@ -86,14 +86,6 @@ int coap_start_client(const char *host, uint16_t port)
   {
     LOG_ERR("Error setting TLS tag socket option: %d", errno);
   }
-  /*  ret = setsockopt(sock, SOL_TLS, TLS_HOSTNAME,
-                   TLS_PEER_HOSTNAME, sizeof(TLS_PEER_HOSTNAME));
-  if (ret < 0)
-  {
-    LOG_ERR("Failed to set TLS_HOSTNAME option: %d", errno);
-    ret = -errno;
-  }*/
-
   // Turn off peer validation (TODO: remove)
   int verify = TLS_PEER_VERIFY_NONE;
   ret = setsockopt(sock, SOL_TLS, TLS_PEER_VERIFY,

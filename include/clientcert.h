@@ -1,9 +1,9 @@
 #pragma once
 
-#define CLIENT_CERT_TAG 1
-#define CLIENT_KEY_TAG 2
+#define ROOT_CERT_TAG 1
+#define CLIENT_CERT_TAG 2
 
-#define CLIENT_CERT 1
+//#define CLIENT_CERT 1
 #define TLS_PEER_HOSTNAME "zephyr-client"
 
 /**
@@ -16,7 +16,8 @@ static const unsigned char client_certificate[] = {
 
 static const unsigned char client_key[] = {
 #include "client_key.der.inc"
+    0,
 };
 static const unsigned char root_certificate[] = {
-#include "lab5e_ca.der.inc"
+#include "root-chain.der.inc"
 };
