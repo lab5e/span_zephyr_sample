@@ -11,6 +11,8 @@
 #include "fota_report.h"
 #include "networking.h"
 
+#include "clientcert.h"
+
 // This is the buffer we'll be using for messages.
 #define BUF_SIZE 256
 static uint8_t buffer[BUF_SIZE];
@@ -19,7 +21,7 @@ static uint8_t buffer[BUF_SIZE];
 // and "172.16.15.14:5683" for internal (ie CIoT) clients.
 
 #define LAB5E_HOST "192.168.1.118"
-#define LAB5E_PORT 5683
+#define LAB5E_PORT 5684
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
@@ -88,6 +90,8 @@ static int report_version(void)
 
 void main(void)
 {
+  printf("\n");
+  printf("Root Cert: ------\n%s\n-----\n", root_certificate);
   dhcp_init();
   int res = coap_start_client(LAB5E_HOST, LAB5E_PORT);
 
