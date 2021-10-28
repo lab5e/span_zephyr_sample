@@ -68,12 +68,12 @@ int coap_start_client(const char *host, uint16_t port)
     LOG_ERR("Unable to add client key to TLS credentials: %d", ret);
   }
   LOG_DBG("TLS credentials added for socket");
-#endif
 
-#ifdef CLIENT_CERT
   sock = socket(addr.sin_family, SOCK_DGRAM, IPPROTO_DTLS_1_2);
 #else
+
   sock = socket(addr.sin_family, SOCK_DGRAM, IPPROTO_UDP);
+
 #endif
   if (sock < 0)
   {

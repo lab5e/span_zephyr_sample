@@ -7,6 +7,7 @@
 #include <net/socket.h>
 #include <zephyr.h>
 
+#include "udp-client.h"
 #include "coap-client.h"
 #include "fota_report.h"
 #include "networking.h"
@@ -21,8 +22,8 @@ static uint8_t buffer[BUF_SIZE];
 // and "172.16.15.14:5683" for internal (ie CIoT) clients.
 
 #define LAB5E_HOST "192.168.1.118"
-#define LAB5E_PORT 5684
-
+#define LAB5E_COAP_PORT 5684
+#define LAB5E_UDP_PORT 1234
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
 #define FW_VERSION "1.0.0"
@@ -94,7 +95,7 @@ static int report_version(void)
 void main(void)
 {
   dhcp_init();
-  int res = coap_start_client(LAB5E_HOST, LAB5E_PORT);
+  int res = coap_start_client(LAB5E_HOST, LAB5E_COAP_PORT);
 
   res = report_version();
 
@@ -118,9 +119,10 @@ void main(void)
     {
       goto ohnoes;
     }
-    k_sleep(K_MSEC(1000));
+    k_sleep(K_MSEC(250));
   }
 ohnoes:
   coap_stop_client();
-  k_sleep(K_FOREVER);
+
+  send_udp(LAB5E_HOST, LAB5E_UDP_PORT);
 }
