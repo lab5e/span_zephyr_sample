@@ -91,7 +91,7 @@ void main(void) {
 
   res = report_version();
 
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 10; i++) {
     buffer[0] = (uint8_t)i;
     res = coap_send_message(COAP_METHOD_POST, "data/on/server", buffer, 1);
     if (res >= 0) {

@@ -49,6 +49,9 @@ int coap_start_client(const char *host, uint16_t port) {
   if (ret != 0) {
     LOG_ERR("Unable to add root certificate to TLS credentials: %d", ret);
   }
+
+  // There's no constant for a client certificate but the rest of the code
+  // refers to the server certificate as "own" so this looks a bit weird.
   ret = tls_credential_add(CLIENT_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
                            client_certificate, sizeof(client_certificate));
   if (ret != 0) {
@@ -84,8 +87,12 @@ int coap_start_client(const char *host, uint16_t port) {
     LOG_ERR("Error setting TLS tag socket option: %d", errno);
   }
 
-  // Turn off peer validation (TODO: remove)
-  int verify = TLS_PEER_VERIFY_NONE;
+  // Certificate verification doesn't work - it might be a memory issue or it
+  // might be the missing intermediate(s). The verification works for the
+  // *server* so the client is behaving as expected and it works for mbedtls on
+  // ESP-IDF so I'm inclined to point a finger on impedance mismatch somewhere
+  // in Zephyr
+  int verify = TLS_PEER_VERIFY_OPTIONAL;
   ret = setsockopt(sock, SOL_TLS, TLS_PEER_VERIFY, &verify, sizeof(verify));
   if (ret < 0) {
     LOG_ERR("Failed to set TLS_PEER_VERIFY option: %d", errno);
